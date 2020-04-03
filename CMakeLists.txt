@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.1)
 
-project (Boilerplate)
+project (Outline)
 
 add_executable(main
  ${PROJECT_SOURCE_DIR}/main.cpp

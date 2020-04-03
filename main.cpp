@@ -30,32 +30,33 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 "{\n"
 "color = u_Color;\n"
 "}\n\0";
-int numPoints = 0;
-int lineNumber=0;
-constexpr int MAXVERTS = 1000000;
+constexpr int MAXVERTS = 10000;
+int numPoints[MAXVERTS] = {0};
+int lineNumber = 0;
+
 bool moving = false;
-GLfloat*  vertices=new GLfloat[MAXVERTS];
-GLuint VBO, VAO;
+GLfloat vertices[MAXVERTS][MAXVERTS];
+GLuint VBO[MAXVERTS], VAO[MAXVERTS];
 
 void addPoint(float xpos, float ypos) {
-	if (numPoints >= MAXVERTS / 2)return;
+	if (numPoints[lineNumber] >= MAXVERTS / 2)return;
 	float dotX = 2 * (float)xpos / WIDTH - 1.0f;
 	float dotY = 1 - 2 * (float)(ypos / HEIGHT);
-	vertices[2 * numPoints] = dotX;
-	vertices[2 * numPoints+1] = dotY;
-	numPoints++;
+	vertices[lineNumber][2 * numPoints[lineNumber]] = dotX;
+	vertices[lineNumber][2 * numPoints[lineNumber] + 1] = dotY;
+	numPoints[lineNumber]++;
 }
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+void mouse_button_callback(GLFWwindow * window, int button, int action, int mods)
 {
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
 	{
-	
-			double xpos, ypos;
-			glfwGetCursorPos(window, &xpos, &ypos);
-			addPoint(xpos,ypos);
-			moving = true;
+
+		double xpos, ypos;
+		glfwGetCursorPos(window, &xpos, &ypos);
+		addPoint(xpos, ypos);
+		moving = true;
 	}
-	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE){
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
 		moving = false;
 		lineNumber++;
 	}
@@ -167,13 +168,13 @@ int main()
 
 
 	// Unbind VAO (it's always a good thing to unbind any buffer/array to prevent strange bugs)
-	
+
 	glUseProgram(shaderProgram);
 	glEnable(GL_PROGRAM_POINT_SIZE);
 	GLuint location = glGetUniformLocation(shaderProgram, "u_Color");
 	ImVec4 clear_color = ImVec4(0.82f, 0.0f, 0.23f, 1.00f);
 	ImVec4 bg_color = ImVec4(0.07f, 0.07f, 0.07f, 1.00f);
-	
+
 	while (!glfwWindowShouldClose(window))
 	{
 		static float f = 0.3f;
@@ -184,20 +185,7 @@ int main()
 			glfwGetCursorPos(window, &xpos, &ypos);
 			addPoint(xpos, ypos);
 		}
-		if (numPoints > 0 && numPoints<MAXVERTS/2) {
-			glGenVertexArrays(1, &VAO);
-			glGenBuffers(1, &VBO);
-			// Bind the Vertex Array Object first, then bind and set vertex buffer(s) and attribute pointer(s).
-			glBindVertexArray(VAO);
 
-			glBindBuffer(GL_ARRAY_BUFFER, VBO);
-			glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 2 * numPoints, vertices, GL_STATIC_DRAW);
-
-			glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (GLvoid*)0);
-			glEnableVertexAttribArray(0);
-
-			glBindBuffer(GL_ARRAY_BUFFER, 0); // Note that this is allowed, the call to glVertexAttribPointer registered VBO as the currently bound vertex buffer object so afterwards we can safely unbind
-		}
 		glBindVertexArray(0);
 		glUniform4f(location, clear_color.x, clear_color.y, clear_color.z, clear_color.w);
 
@@ -205,20 +193,37 @@ int main()
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
-		// Check if any events have been activiated (key pressed, mouse moved etc.) and call corresponding response functions
-		glfwPollEvents();
 		glClearColor(bg_color.x, bg_color.y, bg_color.z, bg_color.w);
 		glClear(GL_COLOR_BUFFER_BIT);
-		glBindVertexArray(0);
-		// Draw our first triangle
-		
-		
-		glBindVertexArray(VAO);
-		glDrawArrays(GL_LINE_STRIP_ADJACENCY, 0, numPoints);
-		glBindVertexArray(0);
+		for (int i = 0; i <= lineNumber; i++) {
+			if (numPoints[lineNumber] > 0 && numPoints[lineNumber] < MAXVERTS / 2) {
+				glGenVertexArrays(1, &VAO[i]);
+				glGenBuffers(1, &VBO[i]);
+				// Bind the Vertex Array Object first, then bind and set vertex buffer(s) and attribute pointer(s).
+				glBindVertexArray(VAO[i]);
+
+				glBindBuffer(GL_ARRAY_BUFFER, VBO[i]);
+				glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 2 * numPoints[i], &vertices[i][0], GL_STATIC_DRAW);
+
+				glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (GLvoid*)0);
+				glEnableVertexAttribArray(0);
+
+				glBindBuffer(GL_ARRAY_BUFFER, 0); // Note that this is allowed, the call to glVertexAttribPointer registered VBO as the currently bound vertex buffer object so afterwards we can safely unbind
+
+				glBindVertexArray(0);
+				// Draw our first triangle
+			}
+			// Check if any events have been activiated (key pressed, mouse moved etc.) and call corresponding response functions
+
+			glBindVertexArray(VAO[i]);
+			glDrawArrays(GL_LINE_STRIP_ADJACENCY, 0, numPoints[i]);
+			glBindVertexArray(0);
+
+		}
+		glfwPollEvents();
 		ImGui::Begin("Outline");                          // Create a window called "Hello, world!" and append into it.
 
-		ImGui::Text("Options");           
+		ImGui::Text("Options");
 		ImGui::ColorEdit3("BG color", (float*)& bg_color);
 		ImGui::SliderFloat("Scale", &f, 0.f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
 		ImGui::ColorEdit3("FG color", (float*)& clear_color); // Edit 3 floats representing a color
@@ -234,12 +239,14 @@ int main()
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
 
+
 	// Properly de-allocate all resources once they've outlived their purpose
-	glDeleteVertexArrays(1, &VAO);
-	glDeleteBuffers(1, &VBO);
+	for (int i = 0; i < lineNumber; i++){
+		glDeleteVertexArrays(1, &VAO[i]);
+		glDeleteBuffers(1, &VBO[i]);
+		}
 
 	// Terminate GLFW, clearing any resources allocated by GLFW.
 	glfwTerminate();
-	delete[] vertices;
 	return EXIT_SUCCESS;
 }

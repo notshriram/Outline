@@ -1,6 +1,11 @@
 # Outline
 
 Simple Sketching App for Windows in OpenGL
+
+
+<img src="screen.png" style="float: left; margin-right: 10px;" width=500px/>
+
+
 ## Getting Started
 to clone this project it is *NECESSARY* to use the `--recursive` flag
 
