@@ -11,7 +11,7 @@ to clone this project it is *NECESSARY* to use the `--recursive` flag
 
 
 ```
-git clone --recursive https://github.com/notshriram/OpenGL_Boilerplate
+git clone --recursive https://github.com/notshriram/Outline
 ```
 
 ### Prerequisites
